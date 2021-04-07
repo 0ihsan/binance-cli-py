@@ -23,6 +23,7 @@ from docopt import docopt
 from json import dumps
 from os import getenv
 from sys import stdout, stderr, exit
+import sys
 
 version = '0.1.0'
 
@@ -62,6 +63,8 @@ def main():
 
     if arg['--verbose']:
         print(arg, file=stderr)
+    else:
+        sys.tracebacklimit = 0
 
     if arg['--help']:
         print(__doc__, file=stderr)
