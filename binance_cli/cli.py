@@ -1,4 +1,4 @@
-"""binance-cli - binance scraper, streamer
+"""binance-cli - manage your binance account in command line
 
 Usage:
   binance-cli status
@@ -14,6 +14,7 @@ Options:
 from binance.client import Client
 from docopt import docopt
 from json import dumps
+from os import getenv
 from sys import stdout, stderr, exit
 
 version = '0.0.1'
@@ -22,16 +23,31 @@ version = '0.0.1'
 def main():
 
     arg = docopt(__doc__, version=version)
-
-    print(arg)
+    api_key = getenv('BINANCE_FUTURES_API')
+    sec_key = getenv('BINANCE_FUTURES_SEC')
+    if not api_key and not sec_key:
+        print('please set these environment variables:\n'\
+              '    BINANCE_FUTURES_API\n'\
+              '    BINANCE_FUTURES_SEC', file=stderr)
+        return 1
+    if not api_key:
+        print('environment variable not found: BINANCE_FUTURES_API',file=stderr)
+        return 1
+    if not sec_key:
+        print('environment variable not found: BINANCE_FUTURES_SEC',file=stderr)
+        return 1
+    client = Client(api_key, sec_key)
 
     if arg['--help']:
         print(__doc__, file=stderr)
-        return(0)
+        return 0
+
+    if arg['status']:
+        return client.get_system_status()['status']
 
     else:
         print(__doc__, file=stderr)
-        return(1)
+        return 1
 
 
 if __name__ == '__main__':
