@@ -8,6 +8,7 @@ Usage:
   binance-cli --version
 
 Options:
+  --hide-zero               Do not show zero balances.
   -h --help                 Show this screen.
   --version                 Show the version."""
 
@@ -17,7 +18,7 @@ from json import dumps
 from os import getenv
 from sys import stdout, stderr, exit
 
-version = '0.0.1'
+version = '0.1.0'
 
 
 def main():
@@ -42,7 +43,7 @@ def main():
         print(__doc__, file=stderr)
         return 0
 
-    if arg['status']:
+    elif arg['status']:
         return client.get_system_status()['status']
 
     elif arg['balance']:

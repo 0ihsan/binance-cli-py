@@ -13,7 +13,7 @@
 		binance-cli = {lib, buildPythonApplication, docopt, python-binance}:
 			buildPythonApplication rec {
 				pname = "binance-cli";
-				version = "0.0.1";
+				version = "0.1.0";
 				src = lib.cleanSource ./.;
 				doCheck = false;
 				propagatedBuildInputs = [
