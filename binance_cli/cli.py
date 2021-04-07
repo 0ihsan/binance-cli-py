@@ -1,21 +1,22 @@
 """binance-cli - manage your binance account in command line
 
 Usage:
-  binance-cli status
-  binance-cli order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ]
-  binance-cli balance (spot | futures | coin) [ --hide-zero ]
-  binance-cli show (spot | futures | coin) orders
   binance-cli (-h | --help)
   binance-cli --version
-  binance-cli (-v | --verbose)
+  binance-cli balance (spot | futures | coin) [ -z | --hide-zero ] [ -v | --verbose]
+  binance-cli order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ]
+  binance-cli show (spot | futures | coin) orders [ -v | --verbose ]
+  binance-cli status [ -v | --verbose ]
 
 Options:
-  --hide-zero    Do not show zero balances.
-  --test         Test instead of actually do.
-  --tif <tif>    Time in force. Either gtc, ioc or fok. [default: gtc]
-  --version      Show the version.
-  -h --help      Show this screen.
-  -v --verbose  Verbose output, enable debug messages."""
+  --tif <tif>         Time in force. Either gtc, ioc or fok. [default: gtc]
+  --version           Show the version.
+  -h --help           Show this screen.
+  -l --limit <price>  Set limit price for order.
+  -m --market         Buy directly from the market price.
+  -t --test           Test instead of actually do.
+  -v --verbose        Verbose output, enable debug messages.
+  -z --hide-zero      Do not show zero balances."""
 
 from binance.client import Client
 from docopt import docopt
@@ -86,7 +87,7 @@ def main():
                 # else:
                 print(dumps(client.get_open_orders()))
 
-    if arg['order']:
+    elif arg['order']:
         tif = tifs[arg['--tif']]
         symbol = arg['<symbol>'].upper()
         if arg['<side>'].strip().lower() in sides:
@@ -96,8 +97,8 @@ def main():
                   ' not', arg['side'], file=stderr)
         quantity = float(arg['<quantity>'])
         if arg['--limit']:
-            if arg['<price>']:
-                price = float(arg['<price>'])
+            if arg['--limit']:
+                price = float(arg['--limit'])
                 type_ = types['limit']
                 if arg['--test']:
                     client.create_test_order(symbol=symbol,
