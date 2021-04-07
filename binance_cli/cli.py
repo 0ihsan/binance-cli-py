@@ -4,12 +4,14 @@ Usage:
   binance-cli (-h | --help)
   binance-cli --version
   binance-cli balance (spot | futures | coin) [ -z | --hide-zero ] [ -v | --verbose]
-  binance-cli order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ]
+  binance-cli futures order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ] [ -r | --reduce-only ]
   binance-cli show (spot | futures | coin) orders [ -v | --verbose ]
+  binance-cli spot order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ]
   binance-cli status [ -v | --verbose ]
 
 Options:
   --tif <tif>         Time in force. Either gtc, ioc or fok. [default: gtc]
+  -r --reduce-only    Open the position max as in the hand.
   --version           Show the version.
   -h --help           Show this screen.
   -l --limit <price>  Set limit price for order.
@@ -23,9 +25,14 @@ from docopt import docopt
 from json import dumps
 from os import getenv
 from sys import stdout, stderr, exit
+from time import time_ns
 import sys
 
 version = '0.1.0'
+
+
+def timemilli():
+    return (time_ns() // 1_000_000)
 
 
 def main():
@@ -104,33 +111,52 @@ def main():
                 price = float(arg['--limit'])
                 type_ = types['limit']
                 if arg['--test']:
-                    client.create_test_order(symbol=symbol,
+                    print(client.create_test_order(symbol=symbol,
                                              side=side,
                                              quantity=quantity,
                                              price=price,
                                              timeInForce=tif,
-                                             type=type_)
+                                             type=type_))
                 else: # actually send the order
-                    client.create_order(symbol=symbol,
-                                        side=side,
-                                        quantity=quantity,
-                                        price=price,
-                                        timeInForce=tif,
-                                        type=type_)
+                    if arg['futures']:
+                        print(client.futures_create_order(symbol=symbol,
+                                            side=side,
+                                            quantity=quantity,
+                                            price=price,
+                                            timeInForce=tif,
+                                            reduceOnly=arg['--reduce-only'],
+                                            timestamp=timemilli(),
+                                            type=type_))
+                    elif arg['spot']:
+                        print(client.create_order(symbol=symbol,
+                                            side=side,
+                                            quantity=quantity,
+                                            price=price,
+                                            timeInForce=tif,
+                                            type=type_))
             else:
                 print('please provide --limit \033[33m<price>\033[0m.')
         elif arg['--market']:
             type_ = types['market']
             if arg['--test']:
-                client.create_test_order(symbol=symbol,
+                print(client.create_test_order(symbol=symbol,
                                          side=side,
                                          quantity=quantity,
-                                         type=type_)
+                                         type=type_))
             else: # actually send the order
-                client.create_order(symbol=symbol,
-                                    side=side,
-                                    quantity=quantity,
-                                    type=type_)
+                if arg['futures']:
+                    print(client.futures_create_order(symbol=symbol,
+                                        side=side,
+                                        quantity=quantity,
+                                        timestamp=timemilli(),
+                                        reduceOnly=arg['--reduce-only'],
+                                        type=type_))
+                elif arg['spot']:
+                    print(client.create_order(symbol=symbol,
+                                        side=side,
+                                        quantity=quantity,
+                                        price=price,
+                                        type=type_))
         else:
             print('please provide either '\
                   '\033[33m --limit <price>\033[0m '\
