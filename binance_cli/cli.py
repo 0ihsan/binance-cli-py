@@ -2,7 +2,7 @@
 
 Usage:
   binance-cli status
-  binance-cli balance
+  binance-cli balance (spot | futures | coin) [ --hide-zero ]
   binance-cli order --amount
   binance-cli (-h | --help)
   binance-cli --version
@@ -44,6 +44,15 @@ def main():
 
     if arg['status']:
         return client.get_system_status()['status']
+
+    elif arg['balance']:
+        if arg['futures']:
+            print(dumps(client.futures_account_balance()))
+        elif arg['spot']:
+            print(dumps(client.get_account()['balances']))
+        elif arg['coin']:
+            print(dumps(client.futures_coin_account_balance()))
+        return 0
 
     else:
         print(__doc__, file=stderr)
