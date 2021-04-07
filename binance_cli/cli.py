@@ -100,6 +100,8 @@ def main():
     elif arg['order']:
         tif = tifs[arg['--tif']]
         symbol = arg['<symbol>'].upper()
+        if arg['futures'] and not symbol.endswith('USDT'):
+            symbol += 'USDT'
         if arg['<side>'].strip().lower() in sides:
             side = sides[arg['<side>'].strip().lower()]
         else:
