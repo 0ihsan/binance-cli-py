@@ -108,12 +108,12 @@ def main():
                                              timeInForce=tif,
                                              type=type_)
                 else: # actually send the order
-                    client.create_test_order(symbol=symbol,
-                                             side=side,
-                                             quantity=quantity,
-                                             price=price,
-                                             timeInForce=tif,
-                                             type=type_)
+                    client.create_order(symbol=symbol,
+                                        side=side,
+                                        quantity=quantity,
+                                        price=price,
+                                        timeInForce=tif,
+                                        type=type_)
             else:
                 print('please provide --limit \033[33m<price>\033[0m.')
         elif arg['--market']:
@@ -124,10 +124,10 @@ def main():
                                          quantity=quantity,
                                          type=type_)
             else: # actually send the order
-                client.create_test_order(symbol=symbol,
-                                         side=side,
-                                         quantity=quantity,
-                                         type=type_)
+                client.create_order(symbol=symbol,
+                                    side=side,
+                                    quantity=quantity,
+                                    type=type_)
         else:
             print('please provide either '\
                   '\033[33m --limit <price>\033[0m '\
