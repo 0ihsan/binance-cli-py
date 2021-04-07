@@ -2,16 +2,20 @@
 
 Usage:
   binance-cli status
-  binance-cli order --amount
+  binance-cli order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ]
   binance-cli balance (spot | futures | coin) [ --hide-zero ]
   binance-cli show (spot | futures | coin) orders
   binance-cli (-h | --help)
   binance-cli --version
+  binance-cli (-v | --verbose)
 
 Options:
-  --hide-zero               Do not show zero balances.
-  -h --help                 Show this screen.
-  --version                 Show the version."""
+  --hide-zero    Do not show zero balances.
+  --test         Test instead of actually do.
+  --tif <tif>    Time in force. Either gtc, ioc or fok. [default: gtc]
+  --version      Show the version.
+  -h --help      Show this screen.
+  -v --verbose  Verbose output, enable debug messages."""
 
 from binance.client import Client
 from docopt import docopt
@@ -39,6 +43,24 @@ def main():
         print('environment variable not found: BINANCE_FUTURES_SEC',file=stderr)
         return 1
     client = Client(api_key, sec_key)
+    sides = {
+        'buy': Client.SIDE_BUY,
+        'long':  Client.SIDE_BUY,
+        'sell':  Client.SIDE_SELL,
+        'short':  Client.SIDE_SELL,
+    }
+    types = {
+        'limit': Client.ORDER_TYPE_LIMIT,
+        'market': Client.ORDER_TYPE_MARKET
+    }
+    tifs = {
+        'gtc': Client.TIME_IN_FORCE_GTC,
+        'ioc': Client.TIME_IN_FORCE_IOC,
+        'fok': Client.TIME_IN_FORCE_FOK
+    }
+
+    if arg['--verbose']:
+        print(arg, file=stderr)
 
     if arg['--help']:
         print(__doc__, file=stderr)
@@ -64,6 +86,51 @@ def main():
                 # else:
                 print(dumps(client.get_open_orders()))
 
+    if arg['order']:
+        tif = tifs[arg['--tif']]
+        symbol = arg['<symbol>'].upper()
+        if arg['<side>'].strip().lower() in sides:
+            side = sides[arg['<side>'].strip().lower()]
+        else:
+            print('error: side should be either "buy|long" or "sell|short"'\
+                  ' not', arg['side'], file=stderr)
+        quantity = float(arg['<quantity>'])
+        if arg['--limit']:
+            if arg['<price>']:
+                price = float(arg['<price>'])
+                type_ = types['limit']
+                if arg['--test']:
+                    client.create_test_order(symbol=symbol,
+                                             side=side,
+                                             quantity=quantity,
+                                             price=price,
+                                             timeInForce=tif,
+                                             type=type_)
+                else: # actually send the order
+                    client.create_test_order(symbol=symbol,
+                                             side=side,
+                                             quantity=quantity,
+                                             price=price,
+                                             timeInForce=tif,
+                                             type=type_)
+            else:
+                print('please provide --limit \033[33m<price>\033[0m.')
+        elif arg['--market']:
+            type_ = types['market']
+            if arg['--test']:
+                client.create_test_order(symbol=symbol,
+                                         side=side,
+                                         quantity=quantity,
+                                         type=type_)
+            else: # actually send the order
+                client.create_test_order(symbol=symbol,
+                                         side=side,
+                                         quantity=quantity,
+                                         type=type_)
+        else:
+            print('please provide either '\
+                  '\033[33m --limit <price>\033[0m '\
+                  'or \033[33m--market\033[0m', file=stderr)
 
     else:
         print(__doc__, file=stderr)
