@@ -17,7 +17,7 @@
     },
     "nixpkgs": {
       "locked": {
-        "narHash": "sha256-tTXP5Pmz6B4KKJ11QopVq1i0WHb8g8bnz6IVn5BgAyo=",
+        "narHash": "sha256-XE2Os55ajwZ7giyxf5VrXQf3r4morfDd6LW44Ngp7BY=",
         "path": "/Users/ihsan/code/github.com/nixos/nixpkgs",
         "type": "path"
       },

@@ -3,23 +3,23 @@
 Usage:
   binance-cli (-h | --help)
   binance-cli --version
+  binance-cli funding --stream
   binance-cli balance (spot | futures | coin) [ -z | --hide-zero ] [ -v | --verbose]
-  binance-cli futures order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ] [ -r | --reduce-only ]
-  binance-cli futures cancel order <symbol> <orderid>
+  binance-cli futures order <side> <amount> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -r | --reduce-only ] [ -v | --verbose ]
+  binance-cli futures cancel order <symbol> <orderid> [ --timemilli <timestamp> ]
   binance-cli show (spot | futures | coin) orders [ -v | --verbose ]
   binance-cli spot order <side> <quantity> <symbol> (--limit <price> | --market) [ --tif <tif> ] [ --test ] [ -v | --verbose ]
   binance-cli status [ -v | --verbose ]
 
 Options:
-  --tif <tif>         Time in force. Either gtc, ioc or fok. [default: gtc]
-  -r --reduce-only    Open the position max as in the hand.
-  --version           Show the version.
-  -h --help           Show this screen.
-  -l --limit <price>  Set limit price for order.
-  -m --market         Buy directly from the market price.
-  -t --test           Test instead of actually do.
-  -v --verbose        Verbose output, enable debug messages.
-  -z --hide-zero      Do not show zero balances."""
+  --tif <tif>             Time in force. Either gtc, ioc or fok. [default: gtc]
+  --version               Show the version.
+  -h --help               Show this screen.
+  -l --limit <price>      Set limit price for order.
+  -m --market             Buy directly from the market price.
+  -t --test               Test instead of actually do.
+  -v --verbose            Verbose output, enable debug messages.
+  -z --hide-zero          Do not show zero balances."""
 
 from binance.client import Client
 from docopt import docopt
@@ -27,9 +27,11 @@ from json import dumps
 from os import getenv
 from sys import stdout, stderr, exit
 from time import time_ns
+import asyncio
 import sys
+import websockets
 
-version = '0.1.0'
+version = '0.2.0'
 
 
 def timemilli():
@@ -69,6 +71,8 @@ def main():
         'fok': Client.TIME_IN_FORCE_FOK
     }
 
+    timestamp = timemilli()
+
     if arg['--verbose']:
         print(arg, file=stderr)
     else:
@@ -77,6 +81,20 @@ def main():
     if arg['--help']:
         print(__doc__, file=stderr)
         return 0
+
+    elif arg['funding']:
+        if arg['--stream']:
+            async def message():
+                async with websockets.connect(
+                        "wss://fstream.binance.com/stream") as socket:
+                    await socket.send(
+                    '{"method":"SUBSCRIBE","params":["!markPrice@arr"],"id":1}')
+                    print(await socket.recv())
+            asyncio.get_event_loop().run_until_complete(message())
+        else:
+            print(dumps(client.futures_funding_rate()))
+            return 0
+
 
     elif arg['status']:
         return client.get_system_status()['status']
@@ -94,7 +112,7 @@ def main():
         if arg['spot']:
             if arg['orders']:
                 # if arg['--all']:
-                #     print(dumps(client.get_all_orders()))
+                #     print(dumps(client.get_all_orders()))  # required symbol
                 # else:
                 print(dumps(client.get_open_orders()))
 
@@ -107,17 +125,37 @@ def main():
                 print(client.futures_cancel_order(
                     symbol=symbol,
                     orderid=arg['<orderid>'],
-                    timestamp=timemilli()))
+                    timestamp=timestamp))
             elif arg['spot']:
-                print('not implemented', file=stderr)
+                print('spot cancel order is not implemented', file=stderr)
         else: # create order
             tif = tifs[arg['--tif']]
             if arg['<side>'].strip().lower() in sides:
                 side = sides[arg['<side>'].strip().lower()]
             else: # side is wrong
                 print('error: side should be either "buy|long" or "sell|short"'\
-                      ' not', arg['side'], file=stderr)
-            quantity = float(arg['<quantity>'])
+                      ' not', arg['<side>'], file=stderr)
+
+            if arg['<amount>'].endswith('%'):
+                percent = arg['<amount>'].replace('%', '')
+                percent = float(percent) / 100
+                balance = float(list(filter(
+                    lambda x: x['asset'] == 'USDT',
+                    client.futures_account_balance()))[0]['withdrawAvailable'])
+                price = float(client.futures_mark_price(symbol=symbol)['estimatedSettlePrice'])
+                print(balance)
+                print(percent)
+                print(price)
+                quantity = balance * percent / price
+                print(quantity)
+                exit(0)  # TODO: finish this situtaion
+
+            elif arg['<amount>'].startswith('min'):
+                print('minimum amount order is not implemented', file=stderr)
+
+            else:  # actual quantity given by user
+                quantity = float(arg['<amount>'])
+
             if arg['--limit']:
                 if arg['--limit']:
                     price = float(arg['--limit'])
@@ -137,7 +175,7 @@ def main():
                                                 price=price,
                                                 timeInForce=tif,
                                                 reduceOnly=arg['--reduce-only'],
-                                                timestamp=timemilli(),
+                                                timestamp=timestamp,
                                                 type=type_))
                         elif arg['spot']:
                             print(client.create_order(symbol=symbol,
@@ -160,7 +198,7 @@ def main():
                         print(client.futures_create_order(symbol=symbol,
                                             side=side,
                                             quantity=quantity,
-                                            timestamp=timemilli(),
+                                            timestamp=timestamp,
                                             reduceOnly=arg['--reduce-only'],
                                             type=type_))
                     elif arg['spot']:

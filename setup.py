@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='binance-cli',
-    version="0.1.0",
+    version="0.2.0",
     py_modules=['binance_cli'],
     packages=['binance_cli'],
     entry_points={

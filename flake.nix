@@ -2,7 +2,7 @@
 
 	description = "Manage your Binance account from cli.";
 
-	inputs.nixpkgs.url = "/Users/ihsan/code/github.com/nixos/nixpkgs/";
+	inputs.nixpkgs.url = "github:ihsanturk/nixpkgs";
 	inputs.flake-utils.url = "github:numtide/flake-utils";
 
 	outputs = { self, nixpkgs, flake-utils, }:
@@ -10,15 +10,17 @@
 		pkgs = nixpkgs.legacyPackages.${system};
 	in rec {
 
-		binance-cli = {lib, buildPythonApplication, docopt, python-binance}:
+		binance-cli = {lib, buildPythonApplication, docopt, python-binance,
+		               websockets}:
 			buildPythonApplication rec {
 				pname = "binance-cli";
-				version = "0.1.0";
+				version = "0.2.0";
 				src = lib.cleanSource ./.;
 				doCheck = false;
 				propagatedBuildInputs = [
 					docopt
 					python-binance
+					websockets
 				];
 			};
 
